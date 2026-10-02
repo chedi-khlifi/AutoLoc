@@ -68,8 +68,6 @@ public class Vehicule {
 
     @ManyToMany
     @JoinTable(
-            name = "vehicule_equipement",
-            joinColumns = @JoinColumn(name = "id_vehicule"),
-            inverseJoinColumns = @JoinColumn(name = "id_equipement"))
+            name = "vehicule_equipement")
     private List<Equipement> equipements = new ArrayList<>();
 }
