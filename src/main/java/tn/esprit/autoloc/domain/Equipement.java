@@ -3,6 +3,9 @@ package tn.esprit.autoloc.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "equipement")
 @Getter
@@ -17,4 +20,7 @@ public class Equipement {
 
     @Column(nullable = false, unique = true, length = 100)
     private String libelle;
+
+    @ManyToMany(mappedBy = "equipements", fetch = FetchType.LAZY)
+    private List<Vehicule> vehicules = new ArrayList<>();
 }

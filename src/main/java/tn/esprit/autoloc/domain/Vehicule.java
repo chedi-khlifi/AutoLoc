@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 
@@ -60,4 +62,14 @@ public class Vehicule {
 
     private StatutVehicule statut;
 
+    @ManyToOne
+    @JoinColumn(name = "id_agence")
+    private Agence agence;
+
+    @ManyToMany
+    @JoinTable(
+            name = "vehicule_equipement",
+            joinColumns = @JoinColumn(name = "id_vehicule"),
+            inverseJoinColumns = @JoinColumn(name = "id_equipement"))
+    private List<Equipement> equipements = new ArrayList<>();
 }
