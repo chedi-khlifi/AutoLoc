@@ -33,6 +33,6 @@ public class Contrat {
     @JoinColumn(name = "id_reservation")
     private Reservation reservation;
 
-    @OneToMany(mappedBy = "contrat", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "contrat")
     private List<Paiement> paiements = new ArrayList<>();
 }

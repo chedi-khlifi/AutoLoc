@@ -30,9 +30,9 @@ public class Agence {
     @Column(length = 20)
     private String telephone;
 
-    @OneToMany(mappedBy = "agence", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "agence")
     private List<Employe> employes = new ArrayList<>();
 
-    @OneToMany(mappedBy = "agence", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "agence")
     private List<Vehicule> vehicules = new ArrayList<>();
 }
