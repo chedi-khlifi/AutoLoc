@@ -1,32 +1,24 @@
 package tn.esprit.autoloc.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Table(name = "employe")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Employe {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idEmploye;
+    private Long id;
 
-    @Column(nullable = false, length = 50)
     private String nom;
-
-    @Column(nullable = false, length = 50)
     private String prenom;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private RoleEmploye role;
+    private String poste;
 
     @ManyToOne
-    @JoinColumn(name = "id_agence")
     private Agence agence;
-
 }

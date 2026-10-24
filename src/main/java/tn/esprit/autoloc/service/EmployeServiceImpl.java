@@ -1,70 +1,73 @@
 package tn.esprit.autoloc.service;
 
-import static tn.esprit.autoloc.service.Validations.exigerPresent;
-import static tn.esprit.autoloc.service.Validations.exigerTexte;
-
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import tn.esprit.autoloc.domain.Employe;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
-import tn.esprit.autoloc.repository.IEmployeRepository;
+import tn.esprit.autoloc.repository.EmployeRepository;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class EmployeServiceImpl implements IEmployeService {
 
-    private final IEmployeRepository employeRepository;
+    private final EmployeRepository repository;
+    private final IAgenceService agenceService;
 
     @Override
-    @Transactional
-    public Employe create(Employe employe) {
-        if (employe.getIdEmploye() != null) {
-            throw new IllegalArgumentException(
-                    "Un nouvel employé ne doit pas avoir d'identifiant");
-        }
-        verifierRegles(employe);
-        return employeRepository.save(employe);
+    @Transactional(readOnly = true)
+    public List<Employe> findAll() {
+        return repository.findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Employe findById(Long id) {
-        return employeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employe", id));
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employe introuvable avec l'identifiant " + id));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Employe> findAll() {
-        return employeRepository.findAll();
-    }
-
-    @Override
-    @Transactional
-    public Employe update(Long id, Employe employe) {
-        Employe existant = findById(id);
-        verifierRegles(employe);
-        existant.setNom(employe.getNom());
-        existant.setPrenom(employe.getPrenom());
-        existant.setRole(employe.getRole());
-        existant.setAgence(employe.getAgence());
-        return employeRepository.save(existant);
-    }
-
-    @Override
-    @Transactional
-    public void deleteById(Long id) {
-        if (!employeRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Employe", id);
+    public Employe create(Employe o) {
+        if (o.getId() != null) {
+            throw new IllegalArgumentException("L'identifiant doit être nul à la création");
         }
-        employeRepository.deleteById(id);
+        validate(o);
+        resolve(o);
+        return repository.save(o);
     }
 
-    private void verifierRegles(Employe employe) {
-        exigerTexte(employe.getNom(), "Le nom");
-        exigerTexte(employe.getPrenom(), "Le prénom");
-        exigerPresent(employe.getRole(), "Le rôle");
+    @Override
+    public Employe update(Long id, Employe o) {
+        Employe existing = findById(id);
+        validate(o);
+        resolve(o);
+        existing.setNom(o.getNom());
+        existing.setPrenom(o.getPrenom());
+        existing.setPoste(o.getPoste());
+        existing.setAgence(o.getAgence());
+        return repository.save(existing);
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        repository.delete(findById(id));
+    }
+
+    private void validate(Employe o) {
+        if (!StringUtils.hasText(o.getNom())) {
+            throw new IllegalArgumentException("Le nom de l'employé est obligatoire");
+        }
+        if (o.getAgence() == null || o.getAgence().getId() == null) {
+            throw new IllegalArgumentException("L'agence est obligatoire");
+        }
+    }
+
+    private void resolve(Employe o) {
+        o.setAgence(agenceService.findById(o.getAgence().getId()));
     }
 }

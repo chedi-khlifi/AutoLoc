@@ -1,32 +1,27 @@
 package tn.esprit.autoloc.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Table(name = "maintenance")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Maintenance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idMaintenance;
+    private Long id;
 
-    @Column(nullable = false)
     private LocalDate dateDebut;
-
     private LocalDate dateFin;
-
-    @Column(length = 500)
+    private BigDecimal cout;
     private String description;
 
     @ManyToOne
-    @JoinColumn(name = "id_vehicule")
     private Vehicule vehicule;
-
 }

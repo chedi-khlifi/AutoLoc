@@ -1,69 +1,79 @@
 package tn.esprit.autoloc.service;
 
-import static tn.esprit.autoloc.service.Validations.exigerFinNonAvantDebut;
-import static tn.esprit.autoloc.service.Validations.exigerPresent;
-
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.domain.Maintenance;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
-import tn.esprit.autoloc.repository.IMaintenanceRepository;
+import tn.esprit.autoloc.repository.MaintenanceRepository;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class MaintenanceServiceImpl implements IMaintenanceService {
 
-    private final IMaintenanceRepository maintenanceRepository;
+    private final MaintenanceRepository repository;
+    private final IVehiculeService vehiculeService;
 
     @Override
-    @Transactional
-    public Maintenance create(Maintenance maintenance) {
-        if (maintenance.getIdMaintenance() != null) {
-            throw new IllegalArgumentException(
-                    "Une nouvelle maintenance ne doit pas avoir d'identifiant");
-        }
-        verifierRegles(maintenance);
-        return maintenanceRepository.save(maintenance);
+    @Transactional(readOnly = true)
+    public List<Maintenance> findAll() {
+        return repository.findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Maintenance findById(Long id) {
-        return maintenanceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Maintenance", id));
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Maintenance introuvable avec l'identifiant " + id));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Maintenance> findAll() {
-        return maintenanceRepository.findAll();
-    }
-
-    @Override
-    @Transactional
-    public Maintenance update(Long id, Maintenance maintenance) {
-        Maintenance existant = findById(id);
-        verifierRegles(maintenance);
-        existant.setDateDebut(maintenance.getDateDebut());
-        existant.setDateFin(maintenance.getDateFin());
-        existant.setDescription(maintenance.getDescription());
-        existant.setVehicule(maintenance.getVehicule());
-        return maintenanceRepository.save(existant);
-    }
-
-    @Override
-    @Transactional
-    public void deleteById(Long id) {
-        if (!maintenanceRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Maintenance", id);
+    public Maintenance create(Maintenance o) {
+        if (o.getId() != null) {
+            throw new IllegalArgumentException("L'identifiant doit être nul à la création");
         }
-        maintenanceRepository.deleteById(id);
+        validate(o);
+        resolve(o);
+        return repository.save(o);
     }
 
-    private void verifierRegles(Maintenance maintenance) {
-        exigerPresent(maintenance.getDateDebut(), "La date de début");
-        exigerFinNonAvantDebut(maintenance.getDateDebut(), maintenance.getDateFin());
+    @Override
+    public Maintenance update(Long id, Maintenance o) {
+        Maintenance existing = findById(id);
+        validate(o);
+        resolve(o);
+        existing.setDateDebut(o.getDateDebut());
+        existing.setDateFin(o.getDateFin());
+        existing.setCout(o.getCout());
+        existing.setDescription(o.getDescription());
+        existing.setVehicule(o.getVehicule());
+        return repository.save(existing);
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        repository.delete(findById(id));
+    }
+
+    private void validate(Maintenance o) {
+        if (o.getDateDebut() == null || o.getDateFin() == null) {
+            throw new IllegalArgumentException("Les dates de début et de fin sont obligatoires");
+        }
+        if (o.getDateFin().isBefore(o.getDateDebut())) {
+            throw new IllegalArgumentException("La date de fin ne peut pas précéder la date de début");
+        }
+        if (o.getCout() == null || o.getCout().signum() < 0) {
+            throw new IllegalArgumentException("Le coût doit être positif ou nul");
+        }
+        if (o.getVehicule() == null || o.getVehicule().getId() == null) {
+            throw new IllegalArgumentException("Le véhicule est obligatoire");
+        }
+    }
+
+    private void resolve(Maintenance o) {
+        o.setVehicule(vehiculeService.findById(o.getVehicule().getId()));
     }
 }

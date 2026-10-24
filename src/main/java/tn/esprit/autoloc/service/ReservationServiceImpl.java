@@ -1,72 +1,78 @@
 package tn.esprit.autoloc.service;
 
-import static tn.esprit.autoloc.service.Validations.exigerFinNonAvantDebut;
-import static tn.esprit.autoloc.service.Validations.exigerPresent;
-
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.domain.Reservation;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
-import tn.esprit.autoloc.repository.IReservationRepository;
+import tn.esprit.autoloc.repository.ReservationRepository;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ReservationServiceImpl implements IReservationService {
 
-    private final IReservationRepository reservationRepository;
+    private final ReservationRepository repository;
+    private final IClientService clientService;
+    private final IVehiculeService vehiculeService;
 
     @Override
-    @Transactional
-    public Reservation create(Reservation reservation) {
-        if (reservation.getIdReservation() != null) {
-            throw new IllegalArgumentException(
-                    "Une nouvelle réservation ne doit pas avoir d'identifiant");
-        }
-        verifierRegles(reservation);
-        return reservationRepository.save(reservation);
+    @Transactional(readOnly = true)
+    public List<Reservation> findAll() {
+        return repository.findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Reservation findById(Long id) {
-        return reservationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reservation", id));
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation introuvable avec l'identifiant " + id));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Reservation> findAll() {
-        return reservationRepository.findAll();
-    }
-
-    @Override
-    @Transactional
-    public Reservation update(Long id, Reservation reservation) {
-        Reservation existant = findById(id);
-        verifierRegles(reservation);
-        existant.setDateDebut(reservation.getDateDebut());
-        existant.setDateFin(reservation.getDateFin());
-        existant.setStatut(reservation.getStatut());
-        existant.setClient(reservation.getClient());
-        existant.setVehicule(reservation.getVehicule());
-        return reservationRepository.save(existant);
-    }
-
-    @Override
-    @Transactional
-    public void deleteById(Long id) {
-        if (!reservationRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Reservation", id);
+    public Reservation create(Reservation o) {
+        if (o.getId() != null) {
+            throw new IllegalArgumentException("L'identifiant doit être nul à la création");
         }
-        reservationRepository.deleteById(id);
+        validate(o);
+        resolve(o);
+        return repository.save(o);
     }
 
-    private void verifierRegles(Reservation reservation) {
-        exigerPresent(reservation.getDateDebut(), "La date de début");
-        exigerPresent(reservation.getDateFin(), "La date de fin");
-        exigerPresent(reservation.getStatut(), "Le statut");
-        exigerFinNonAvantDebut(reservation.getDateDebut(), reservation.getDateFin());
+    @Override
+    public Reservation update(Long id, Reservation o) {
+        Reservation existing = findById(id);
+        validate(o);
+        resolve(o);
+        existing.setDateDebut(o.getDateDebut());
+        existing.setDateFin(o.getDateFin());
+        existing.setClient(o.getClient());
+        existing.setVehicule(o.getVehicule());
+        return repository.save(existing);
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        repository.delete(findById(id));
+    }
+
+    private void validate(Reservation o) {
+        if (o.getDateDebut() == null || o.getDateFin() == null) {
+            throw new IllegalArgumentException("Les dates de début et de fin sont obligatoires");
+        }
+        if (o.getDateFin().isBefore(o.getDateDebut())) {
+            throw new IllegalArgumentException("La date de fin ne peut pas précéder la date de début");
+        }
+        if (o.getClient() == null || o.getClient().getId() == null
+                || o.getVehicule() == null || o.getVehicule().getId() == null) {
+            throw new IllegalArgumentException("Le client et le véhicule sont obligatoires");
+        }
+    }
+
+    private void resolve(Reservation o) {
+        o.setClient(clientService.findById(o.getClient().getId()));
+        o.setVehicule(vehiculeService.findById(o.getVehicule().getId()));
     }
 }

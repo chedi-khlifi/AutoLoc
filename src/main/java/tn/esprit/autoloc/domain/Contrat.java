@@ -1,38 +1,33 @@
 package tn.esprit.autoloc.domain;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Table(name = "contrat")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Contrat {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idContrat;
+    private Long id;
 
-    @Column(nullable = false)
     private LocalDate dateSignature;
-
-    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal montantTotal;
-
-    @Column(nullable = false)
-    private boolean valide;
+    private Boolean valide;
 
     @OneToOne
-    @JoinColumn(name = "id_reservation")
     private Reservation reservation;
 
-    @OneToMany(mappedBy = "contrat")
+    @OneToMany(mappedBy = "contrat", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("contrat-paiements")
     private List<Paiement> paiements = new ArrayList<>();
 }
